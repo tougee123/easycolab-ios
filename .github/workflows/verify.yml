@@ -1,0 +1,23 @@
+name: iOS and runtime checks
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  client:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check Google sign-in callbacks
+        run: |
+          swiftc ios_app/Sources/PendingPKCEState.swift ios_app/Tests/OAuthCallbackChecks.swift -o "$RUNNER_TEMP/callbacks"
+          "$RUNNER_TEMP/callbacks"
+      - name: Compile the iOS 15 client
+        run: bash ios_app/run_ios_simulator.sh --build-only
+  runtime:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install the runtime proxy
+        run: sudo apt-get update -qq && sudo apt-get install -y nginx openssl
+      - name: Test authenticated ingress
+        run: python3 -m unittest discover -s tests -v
